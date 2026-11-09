@@ -1,0 +1,41 @@
+{
+    "manifest_version": 3,
+    "name": "goUPCoder trang chủ",
+    "version": "1.0.2",
+    "description": "Tự động quay lại trang chủ và nhấn nút tiếp tục ngay khi xuất hiện.",
+    "permissions": [
+        "tabs",
+        "storage",
+        "alarms"
+    ],
+    "host_permissions": [
+        "https://test.upcoder.xyz/*"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://test.upcoder.xyz/*"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_idle"
+        }
+    ],
+    "background": {
+        "scripts": [
+            "background.js"
+        ]
+    },
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "{07994b94-fe56-48c4-9424-9799072bcd3b}",
+            "strict_min_version": "140.0",
+            "data_collection_permissions": {
+                "required": [
+                    "none"
+                ]
+            }
+        }
+    }
+}
