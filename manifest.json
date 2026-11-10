@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "goUPCoder trang chủ",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "Tự động quay lại trang chủ và nhấn nút tiếp tục ngay khi xuất hiện.",
     "permissions": [
         "tabs",
