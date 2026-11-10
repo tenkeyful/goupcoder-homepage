@@ -1,1 +1,1 @@
-anyone from HCMUE, please fix website >:(
+ai từ `khoacntt@hcmue.edu.vn` thấy webextension này xin fix trang web >:(

@@ -1,28 +1,20 @@
 (() => {
-	const IMAGE_SELECTOR = 'img[src*="/public/img/Continue.png"]';
-
 	let clicked = false;
 
 	function clickContinue() {
 		if (clicked) return;
 
-		const img = document.querySelector(IMAGE_SELECTOR);
-
+		// mũi tên cam ghi "BẤM VÀO ĐÂY ĐỂ TIẾP TỤC"
+		const img = document.querySelector('img[src="https://test.upcoder.xyz/public/img/Continue.png"]');
 		if (!img) return;
 
-		// Prevent duplicate clicks.
 		clicked = true;
+		console.log("goUPCoder: Orange arrow detected. Clicking immediately.");
 
-		console.log("goUPCoder: Continue image detected. Clicking immediately!");
-
-		// Trigger the image's click handler immediately.
 		img.click();
-
-		// Stop watching after clicking.
 		observer.disconnect();
 	}
 
-	// Watch for the image appearing in the page.
 	const observer = new MutationObserver(() => {
 		clickContinue();
 	});
@@ -34,6 +26,6 @@
 		attributeFilter: ["src"],
 	});
 
-	// Also check immediately if the image already exists.
+	// check immediately when script executes
 	clickContinue();
 })();
