@@ -10,6 +10,8 @@ const MAX_URL_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_SAVED_URLS = 100;
 const STARTUP_SCAN_DELAY_MS = 12_000;
 
+const newlyCreatedTabIds = new Set();
+
 function isSessionUrl(value) {
     try {
         const url = new URL(value);
@@ -46,15 +48,74 @@ async function rememberSessionUrl(value) {
     });
 }
 
-// Capture URL changes while the browser is running.
+async function redirectKnownSessionTab(tabId, value) {
+    if (!isSessionUrl(value)) return;
+
+    const stored = await browser.storage.local.get(URL_HISTORY_KEY);
+    const history = stored[URL_HISTORY_KEY] || {};
+    const timestamp = history[value];
+
+    if (
+        !Number.isFinite(timestamp) ||
+        Date.now() - timestamp > MAX_URL_AGE_MS
+    ) {
+        return;
+    }
+
+    // Do not redirect if the tab has already navigated somewhere else.
+    const tab = await browser.tabs.get(tabId);
+
+    if (tab.url !== value && tab.pendingUrl !== value) return;
+
+    await browser.tabs.update(tabId, {
+        url: HOME_URL,
+        loadReplace: true
+    });
+}
+
+// A restored tab can already have its URL, or it can start as about:blank.
+browser.tabs.onCreated.addListener((tab) => {
+    if (tab.id === undefined) return;
+
+    const initialUrl = tab.pendingUrl || tab.url;
+
+    if (!initialUrl || initialUrl === "about:blank") {
+        newlyCreatedTabIds.add(tab.id);
+        return;
+    }
+
+    if (isSessionUrl(initialUrl)) {
+        void redirectKnownSessionTab(tab.id, initialUrl).catch((error) => {
+            console.error("goUPCoder:", error);
+        });
+    }
+});
+
+// Capture URL changes and detect the final URL of newly created/restored tabs.
 browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    const currentUrl = changeInfo.url || tab.url;
+    const currentUrl = changeInfo.url || tab.pendingUrl || tab.url;
+
+    if (currentUrl && newlyCreatedTabIds.has(tabId)) {
+        if (isSessionUrl(currentUrl)) {
+            newlyCreatedTabIds.delete(tabId);
+
+            void redirectKnownSessionTab(tabId, currentUrl).catch((error) => {
+                console.error("goUPCoder:", error);
+            });
+        } else if (changeInfo.url && currentUrl !== "about:blank") {
+            newlyCreatedTabIds.delete(tabId);
+        }
+    }
 
     if (currentUrl) {
         void rememberSessionUrl(currentUrl).catch((error) => {
             console.error("goUPCoder:", error);
         });
     }
+});
+
+browser.tabs.onRemoved.addListener((tabId) => {
+    newlyCreatedTabIds.delete(tabId);
 });
 
 // Seed URL history when the extension is installed or updated.
@@ -100,7 +161,7 @@ browser.runtime.onStartup.addListener(async () => {
     }
 });
 
-// Redirect only exact previously recorded session URLs.
+// Redirect only exact previously recorded session URLs after startup.
 browser.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name !== STARTUP_ALARM) return;
 
